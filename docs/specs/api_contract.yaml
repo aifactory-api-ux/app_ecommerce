@@ -1,0 +1,89 @@
+# API_CONTRACT.md
+
+## Endpoints
+
+---
+
+### 1. Get Sales Summary
+
+| Field            | Value                                   |
+|------------------|-----------------------------------------|
+| HTTP Method      | GET                                     |
+| Path             | `/api/dashboard/sales-summary`          |
+| Request Body     | None                                    |
+| Query Parameters | `start_date` (string, required, ISO date)<br>`end_date` (string, required, ISO date) |
+| Response Status  | 200 OK                                  |
+| Response Body    | `SalesSummary`                          |
+| Auth Required    | No                                      |
+
+#### Response Schema: `SalesSummary`
+
+| Field          | Type    |
+|----------------|---------|
+| total_sales    | int     |
+| total_revenue  | float   |
+| period_start   | date    |
+| period_end     | date    |
+
+---
+
+### 2. Get Top Products
+
+| Field            | Value                                   |
+|------------------|-----------------------------------------|
+| HTTP Method      | GET                                     |
+| Path             | `/api/dashboard/top-products`           |
+| Request Body     | None                                    |
+| Query Parameters | `limit` (integer, optional, default: 5)<br>`start_date` (string, required, ISO date)<br>`end_date` (string, required, ISO date) |
+| Response Status  | 200 OK                                  |
+| Response Body    | `TopProductsResponse`                   |
+| Auth Required    | No                                      |
+
+#### Response Schema: `TopProductsResponse`
+
+| Field    | Type         |
+|----------|--------------|
+| products | List[TopProduct] |
+
+#### `TopProduct` Object
+
+| Field         | Type    |
+|---------------|---------|
+| product_id    | int     |
+| product_name  | str     |
+| units_sold    | int     |
+| revenue       | float   |
+
+---
+
+### 3. Generate Sales Report
+
+| Field            | Value                                   |
+|------------------|-----------------------------------------|
+| HTTP Method      | POST                                    |
+| Path             | `/api/dashboard/sales-report`           |
+| Request Body     | `SalesReportRequest`                    |
+| Response Status  | 200 OK                                  |
+| Response Body    | `SalesReportResponse`                   |
+| Auth Required    | No                                      |
+
+#### Request Schema: `SalesReportRequest`
+
+| Field       | Type    | Required |
+|-------------|---------|----------|
+| start_date  | date    | Yes      |
+| end_date    | date    | Yes      |
+
+#### Response Schema: `SalesReportResponse`
+
+| Field   | Type                   |
+|---------|------------------------|
+| report  | List[SalesReportEntry] |
+
+#### `SalesReportEntry` Object
+
+| Field   | Type    |
+|---------|---------|
+| date    | date    |
+| sales   | int     |
+| revenue | float   |
