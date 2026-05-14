@@ -1,0 +1,50 @@
+# API_CONTRACT.md
+
+## 1. Get Sales Summary
+
+| Method | Path                              | Auth Required | Query Parameters                                                                 | Request Body | Response Status | Response Body    |
+|--------|-----------------------------------|---------------|----------------------------------------------------------------------------------|--------------|-----------------|-----------------|
+| GET    | /api/dashboard/sales-summary      | No            | - start_date (string, required, ISO date)<br>- end_date (string, required, ISO date) | None         | 200 OK          | SalesSummary    |
+
+**SalesSummary**
+- total_sales: int
+- total_revenue: float
+- period_start: string (ISO date)
+- period_end: string (ISO date)
+
+---
+
+## 2. Get Top Products
+
+| Method | Path                              | Auth Required | Query Parameters                                                                                  | Request Body | Response Status | Response Body         |
+|--------|-----------------------------------|---------------|---------------------------------------------------------------------------------------------------|--------------|-----------------|----------------------|
+| GET    | /api/dashboard/top-products       | No            | - limit (integer, optional, default: 5)<br>- start_date (string, required, ISO date)<br>- end_date (string, required, ISO date) | None         | 200 OK          | TopProductsResponse  |
+
+**TopProductsResponse**
+- products: TopProduct[]
+
+**TopProduct**
+- product_id: int
+- product_name: string
+- units_sold: int
+- revenue: float
+
+---
+
+## 3. Generate Sales Report
+
+| Method | Path                              | Auth Required | Request Body                                                                                      | Response Status | Response Body         |
+|--------|-----------------------------------|---------------|---------------------------------------------------------------------------------------------------|-----------------|----------------------|
+| POST   | /api/dashboard/sales-report       | No            | SalesReportRequest                                                                                | 200 OK          | SalesReportResponse  |
+
+**SalesReportRequest**
+- start_date: string (ISO date)
+- end_date: string (ISO date)
+
+**SalesReportResponse**
+- entries: SalesReportEntry[]
+
+**SalesReportEntry**
+- date: string (ISO date)
+- sales: int
+- revenue: float
