@@ -2,64 +2,74 @@
 
 ## 1. Get Sales Summary
 
-| Method | Path                              | Query Parameters                                                                 | Request Body | Response Status | Response Schema   | Auth Required |
-|--------|-----------------------------------|----------------------------------------------------------------------------------|--------------|----------------|-------------------|--------------|
-| GET    | /api/dashboard/sales-summary      | - start_date (string, required, ISO date)<br>- end_date (string, required, ISO date) | None         | 200 OK         | SalesSummary      | No           |
+| Method | Path                              | Auth Required | Query Parameters                                                                 | Request Body | Response Schema                                                                                                                                         | Status Codes |
+|--------|-----------------------------------|---------------|----------------------------------------------------------------------------------|--------------|---------------------------------------------------------------------------------------------------------------------------------------------------------|--------------|
+| GET    | /api/dashboard/sales-summary      | No            | - start_date (string, required, ISO date)<br>- end_date (string, required, ISO date) | None         | <ul><li>total_sales (int)</li><li>total_revenue (float)</li><li>period_start (string, ISO date)</li><li>period_end (string, ISO date)</li></ul>        | 200          |
 
-### Response Schema: SalesSummary
-
-| Field         | Type   |
-|---------------|--------|
-| total_sales   | int    |
-| total_revenue | float  |
-| period_start  | date   |
-| period_end    | date   |
+**Response Example:**
+```json
+{
+  "total_sales": 123,
+  "total_revenue": 4567.89,
+  "period_start": "2024-06-01",
+  "period_end": "2024-06-30"
+}
+```
 
 ---
 
-## 2. Get Top Products
+## 2. Get Top Selling Products
 
-| Method | Path                              | Query Parameters                                                                                          | Request Body | Response Status | Response Schema      | Auth Required |
-|--------|-----------------------------------|-----------------------------------------------------------------------------------------------------------|--------------|----------------|----------------------|--------------|
-| GET    | /api/dashboard/top-products       | - start_date (string, required, ISO date)<br>- end_date (string, required, ISO date)<br>- limit (integer, optional, default: 5) | None         | 200 OK         | TopProductsResponse  | No           |
+| Method | Path                              | Auth Required | Query Parameters                                                                                                 | Request Body | Response Schema                                                                                                                                                                                                                                                                         | Status Codes |
+|--------|-----------------------------------|---------------|------------------------------------------------------------------------------------------------------------------|--------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------|
+| GET    | /api/dashboard/top-products       | No            | - start_date (string, required, ISO date)<br>- end_date (string, required, ISO date)<br>- limit (integer, optional, default 5) | None         | <ul><li>products (array of objects):<ul><li>product_id (int)</li><li>product_name (string)</li><li>units_sold (int)</li><li>revenue (float)</li></ul></li></ul>                                                                                  | 200          |
 
-### Response Schema: TopProductsResponse
-
-| Field    | Type         |
-|----------|--------------|
-| products | List[TopProduct] |
-
-#### TopProduct
-
-| Field        | Type   |
-|--------------|--------|
-| product_id   | int    |
-| product_name | str    |
-| units_sold   | int    |
-| revenue      | float  |
+**Response Example:**
+```json
+{
+  "products": [
+    {
+      "product_id": 1,
+      "product_name": "Producto A",
+      "units_sold": 100,
+      "revenue": 2000.00
+    }
+  ]
+}
+```
 
 ---
 
 ## 3. Generate Sales Report
 
-| Method | Path                              | Query Parameters | Request Body           | Response Status | Response Schema        | Auth Required |
-|--------|-----------------------------------|------------------|-----------------------|----------------|-----------------------|--------------|
-| POST   | /api/dashboard/sales-report       | None             | SalesReportRequest    | 200 OK         | SalesReportResponse   | No           |
+| Method | Path                              | Auth Required | Request Body                                                                                                   | Response Schema                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Status Codes |
+|--------|-----------------------------------|---------------|----------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------|
+| POST   | /api/dashboard/sales-report       | No            | <ul><li>start_date (string, required, ISO date)</li><li>end_date (string, required, ISO date)</li></ul>         | <ul><li>summary (object):<ul><li>total_sales (int)</li><li>total_revenue (float)</li><li>period_start (string, ISO date)</li><li>period_end (string, ISO date)</li></ul></li><li>top_products (array of objects):<ul><li>product_id (int)</li><li>product_name (string)</li><li>units_sold (int)</li><li>revenue (float)</li></ul></li></ul>                                                                                                   | 200          |
 
-### Request Body: SalesReportRequest
+**Request Example:**
+```json
+{
+  "start_date": "2024-06-01",
+  "end_date": "2024-06-30"
+}
+```
 
-| Field      | Type   | Required |
-|------------|--------|----------|
-| start_date | date   | Yes      |
-| end_date   | date   | Yes      |
-
-### Response Schema: SalesReportResponse
-
-| Field        | Type             |
-|--------------|------------------|
-| summary      | SalesSummary     |
-| top_products | List[TopProduct] |
-
----
-
-**Note:** All field names, types, and endpoint details are as specified in SPEC.md. No authentication is required for any endpoint.
+**Response Example:**
+```json
+{
+  "summary": {
+    "total_sales": 123,
+    "total_revenue": 4567.89,
+    "period_start": "2024-06-01",
+    "period_end": "2024-06-30"
+  },
+  "top_products": [
+    {
+      "product_id": 1,
+      "product_name": "Producto A",
+      "units_sold": 100,
+      "revenue": 2000.00
+    }
+  ]
+}
+```

@@ -1,1 +1,1 @@
-"""Python package marker."""
+# shared module

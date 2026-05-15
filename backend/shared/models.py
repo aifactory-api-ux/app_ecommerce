@@ -10,7 +10,7 @@ class SalesSummary(BaseModel):
     period_end: date
 
 
-class TopProduct(BaseModel):
+class ProductStat(BaseModel):
     product_id: int
     product_name: str
     units_sold: int
@@ -18,7 +18,7 @@ class TopProduct(BaseModel):
 
 
 class TopProductsResponse(BaseModel):
-    products: List[TopProduct]
+    products: List[ProductStat]
 
 
 class SalesReportRequest(BaseModel):
@@ -28,4 +28,4 @@ class SalesReportRequest(BaseModel):
 
 class SalesReportResponse(BaseModel):
     summary: SalesSummary
-    top_products: List[TopProduct]
+    top_products: List[ProductStat]
