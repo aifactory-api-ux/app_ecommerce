@@ -1,0 +1,336 @@
+# API_CONTRACT.md
+
+## Authentication
+
+### POST /api/v1/auth/login
+
+**Description:** User login, returns JWT token
+
+**Authentication Required:** No
+
+**Request Body:**
+```json
+{
+  "email": "string",
+  "password": "string"
+}
+```
+
+**Response (200):**
+```json
+{
+  "access_token": "string",
+  "token_type": "string"
+}
+```
+
+---
+
+### POST /api/v1/auth/refresh
+
+**Description:** Refresh access token
+
+**Authentication Required:** No
+
+**Request Body:**
+```json
+{
+  "refresh_token": "string"
+}
+```
+
+**Response (200):**
+```json
+{
+  "access_token": "string",
+  "token_type": "string"
+}
+```
+
+---
+
+### GET /api/v1/auth/me
+
+**Description:** Get current user info
+
+**Authentication Required:** Yes
+
+**Request Body:** None
+
+**Response (200):**
+```json
+{
+  "id": "integer",
+  "email": "string",
+  "full_name": "string",
+  "role": "string",
+  "is_active": "boolean",
+  "created_at": "datetime",
+  "updated_at": "datetime"
+}
+```
+
+---
+
+## Dashboard
+
+### GET /api/v1/dashboard/summary
+
+**Description:** Get complete dashboard data
+
+**Authentication Required:** Yes
+
+**Query Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| start_date | date | Yes | Start date for the period |
+| end_date | date | Yes | End date for the period |
+
+**Response (200):**
+```json
+{
+  "summary": {
+    "total_sales": "decimal",
+    "total_orders": "integer",
+    "total_products_sold": "integer",
+    "average_order_value": "decimal",
+    "sales_change_percent": "float"
+  },
+  "sales_by_date": [
+    {
+      "date": "date",
+      "total_sales": "decimal",
+      "order_count": "integer"
+    }
+  ],
+  "top_products": [
+    {
+      "product_id": "integer",
+      "product_name": "string",
+      "total_quantity": "integer",
+      "total_revenue": "decimal",
+      "category": "string",
+      "sales_count": "integer"
+    }
+  ],
+  "sales_by_category": [
+    {
+      "category": "string",
+      "total_revenue": "decimal",
+      "total_quantity": "integer",
+      "percentage": "float"
+    }
+  ],
+  "orders_by_status": [
+    {
+      "status": "string",
+      "count": "integer"
+    }
+  ],
+  "period_start": "date",
+  "period_end": "date"
+}
+```
+
+---
+
+### GET /api/v1/dashboard/sales-by-date
+
+**Description:** Get daily sales breakdown
+
+**Authentication Required:** Yes
+
+**Query Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| start_date | date | Yes | Start date for the period |
+| end_date | date | Yes | End date for the period |
+
+**Response (200):**
+```json
+[
+  {
+    "date": "date",
+    "total_sales": "decimal",
+    "order_count": "integer"
+  }
+]
+```
+
+---
+
+### GET /api/v1/dashboard/top-products
+
+**Description:** Get best selling products
+
+**Authentication Required:** Yes
+
+**Query Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| start_date | date | Yes | Start date for the period |
+| end_date | date | Yes | End date for the period |
+| limit | integer | No | Maximum number of products to return |
+
+**Response (200):**
+```json
+[
+  {
+    "product_id": "integer",
+    "product_name": "string",
+    "total_quantity": "integer",
+    "total_revenue": "decimal",
+    "category": "string",
+    "sales_count": "integer"
+  }
+]
+```
+
+---
+
+### GET /api/v1/dashboard/categories
+
+**Description:** Get sales by category
+
+**Authentication Required:** Yes
+
+**Query Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| start_date | date | Yes | Start date for the period |
+| end_date | date | Yes | End date for the period |
+
+**Response (200):**
+```json
+[
+  {
+    "category": "string",
+    "total_revenue": "decimal",
+    "total_quantity": "integer",
+    "percentage": "float"
+  }
+]
+```
+
+---
+
+### GET /api/v1/dashboard/summary-stats
+
+**Description:** Get summary statistics only
+
+**Authentication Required:** Yes
+
+**Query Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| start_date | date | Yes | Start date for the period |
+| end_date | date | Yes | End date for the period |
+
+**Response (200):**
+```json
+{
+  "total_sales": "decimal",
+  "total_orders": "integer",
+  "total_products_sold": "integer",
+  "average_order_value": "decimal",
+  "sales_change_percent": "float"
+}
+```
+
+---
+
+## Reports
+
+### POST /api/v1/reports/generate
+
+**Description:** Generate a new report
+
+**Authentication Required:** Yes
+
+**Request Body:**
+```json
+{
+  "report_type": "sales_summary | product_performance | category_analysis | daily_sales",
+  "start_date": "date",
+  "end_date": "date",
+  "format": "json | csv"
+}
+```
+
+**Response (200):**
+```json
+{
+  "report_id": "string",
+  "report_type": "sales_summary | product_performance | category_analysis | daily_sales",
+  "generated_at": "datetime",
+  "data": "object"
+}
+```
+
+---
+
+### GET /api/v1/reports/{report_id}
+
+**Description:** Get existing report by ID
+
+**Authentication Required:** Yes
+
+**Path Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| report_id | string | Yes | Unique identifier of the report |
+
+**Response (200):**
+```json
+{
+  "report_id": "string",
+  "report_type": "string",
+  "generated_at": "datetime",
+  "data": "object"
+}
+```
+
+---
+
+### GET /api/v1/reports
+
+**Description:** List reports
+
+**Authentication Required:** Yes
+
+**Query Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| start_date | date | No | Filter by start date |
+| end_date | date | No | Filter by end date |
+| report_type | string | No | Filter by report type |
+
+**Response (200):**
+```json
+[
+  {
+    "report_id": "string",
+    "report_type": "string",
+    "generated_at": "datetime",
+    "data": "object"
+  }
+]
+```
+
+---
+
+## Health Check
+
+### GET /health
+
+**Description:** Service health check
+
+**Authentication Required:** No
+
+**Response (200):**
+```json
+{
+  "status": "healthy",
+  "timestamp": "string"
+}
+```
