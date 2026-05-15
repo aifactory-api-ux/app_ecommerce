@@ -21,16 +21,25 @@ class TopProductsResponse(BaseModel):
     products: List[TopProduct]
 
 
+class ProductStat(BaseModel):
+    product_id: int
+    product_name: str
+    units_sold: int
+    revenue: float
+
+
 class SalesReportRequest(BaseModel):
     start_date: date
     end_date: date
+
+
+class SalesReportResponse(BaseModel):
+    total_sales: int
+    total_revenue: float
+    top_products: List[ProductStat]
 
 
 class SalesReportEntry(BaseModel):
     date: date
     sales: int
     revenue: float
-
-
-class SalesReportResponse(BaseModel):
-    entries: List[SalesReportEntry]

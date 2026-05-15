@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import api from '../api/axios'
 import { TopProduct, TopProductsResponse } from '../types/models'
+import { generateSalesReport as generateSalesReportApi, SalesReportResponse, SalesReportRequest } from '../api/dashboard'
 
 interface UseDashboardParams {
   start_date: string
@@ -12,6 +13,9 @@ export function useDashboard(params: UseDashboardParams) {
   const [topProducts, setTopProducts] = useState<TopProduct[] | null>(null)
   const [topProductsLoading, setTopProductsLoading] = useState(false)
   const [topProductsError, setTopProductsError] = useState<string | null>(null)
+  const [salesReport, setSalesReport] = useState<SalesReportResponse | null>(null)
+  const [loadingReport, setLoadingReport] = useState(false)
+  const [errorReport, setErrorReport] = useState<string | null>(null)
 
   const fetchTopProducts = async () => {
     setTopProductsLoading(true)
@@ -39,10 +43,29 @@ export function useDashboard(params: UseDashboardParams) {
     }
   }
 
+  const generateSalesReport = async (data: SalesReportRequest) => {
+    setLoadingReport(true)
+    setErrorReport(null)
+    try {
+      const result = await generateSalesReportApi(data)
+      setSalesReport(result)
+    } catch (err: any) {
+      const message = err.message || err.status_code || 'Failed to generate report'
+      setErrorReport(String(message))
+      setSalesReport(null)
+    } finally {
+      setLoadingReport(false)
+    }
+  }
+
   return {
     topProducts,
     topProductsLoading,
     topProductsError,
     fetchTopProducts,
+    salesReport,
+    loadingReport,
+    errorReport,
+    generateSalesReport,
   }
 }

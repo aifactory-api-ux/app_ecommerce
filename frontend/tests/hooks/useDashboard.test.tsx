@@ -2,6 +2,7 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { useDashboard } from '../../src/hooks/useDashboard'
 
 const mockApiGet = jest.fn()
+const mockGenerateSalesReport = jest.fn()
 
 jest.mock('../../src/api/axios', () => ({
   default: {
@@ -9,92 +10,130 @@ jest.mock('../../src/api/axios', () => ({
   },
 }))
 
+jest.mock('../../src/api/dashboard', () => ({
+  generateSalesReport: mockGenerateSalesReport,
+}))
+
 describe('useDashboard', () => {
   beforeEach(() => {
     jest.clearAllMocks()
   })
 
-  it('returns_top_products_data_on_successful_fetch', async () => {
-    mockApiGet.mockResolvedValueOnce({
-      status: 200,
-      data: {
-        products: [
-          { product_id: 1, product_name: 'Product A', units_sold: 10, revenue: 100.0 },
+  describe('generateSalesReport', () => {
+    it('calls generateSalesReport and updates salesReport state on success', async () => {
+      mockGenerateSalesReport.mockResolvedValueOnce({
+        total_sales: 100,
+        total_revenue: 5000.0,
+        top_products: [
+          { product_id: 1, product_name: 'Product A', units_sold: 50, revenue: 2500.0 },
         ],
-      },
-    })
+      })
 
-    const { result } = renderHook(() =>
-      useDashboard({ start_date: '2024-01-01', end_date: '2024-01-31', limit: 3 })
-    )
+      const { result } = renderHook(() =>
+        useDashboard({ start_date: '2024-06-01', end_date: '2024-06-30' })
+      )
 
-    await waitFor(() => {
-      expect(result.current.topProducts).toBeDefined()
-    })
-  })
+      await result.current.generateSalesReport({
+        start_date: '2024-06-01',
+        end_date: '2024-06-30',
+      })
 
-  it('returns_error_on_422_response', async () => {
-    mockApiGet.mockRejectedValueOnce({
-      response: { status: 422, data: {} },
-    })
+      await waitFor(() => {
+        expect(mockGenerateSalesReport).toHaveBeenCalledWith({
+          start_date: '2024-06-01',
+          end_date: '2024-06-30',
+        })
+      })
 
-    const { result } = renderHook(() =>
-      useDashboard({ start_date: '', end_date: '2024-01-31' })
-    )
-
-    await waitFor(() => {
-      expect(result.current.topProductsError).toBeTruthy()
-    })
-  })
-
-  it('returns_empty_products_list_when_api_returns_empty', async () => {
-    mockApiGet.mockResolvedValueOnce({
-      status: 200,
-      data: { products: [] },
-    })
-
-    const { result } = renderHook(() =>
-      useDashboard({ start_date: '2099-01-01', end_date: '2099-01-31' })
-    )
-
-    await waitFor(() => {
-      expect(result.current.topProducts).toEqual([])
-    })
-  })
-
-  it('uses_default_limit_when_limit_not_provided', async () => {
-    mockApiGet.mockResolvedValueOnce({
-      status: 200,
-      data: {
-        products: [
-          { product_id: 1, product_name: 'A', units_sold: 1, revenue: 10.0 },
-          { product_id: 2, product_name: 'B', units_sold: 2, revenue: 20.0 },
-          { product_id: 3, product_name: 'C', units_sold: 3, revenue: 30.0 },
-          { product_id: 4, product_name: 'D', units_sold: 4, revenue: 40.0 },
-          { product_id: 5, product_name: 'E', units_sold: 5, revenue: 50.0 },
+      expect(result.current.salesReport).toEqual({
+        total_sales: 100,
+        total_revenue: 5000.0,
+        top_products: [
+          { product_id: 1, product_name: 'Product A', units_sold: 50, revenue: 2500.0 },
         ],
-      },
+      })
+      expect(result.current.loadingReport).toBe(false)
+      expect(result.current.errorReport).toBe(null)
     })
 
-    const { result } = renderHook(() =>
-      useDashboard({ start_date: '2024-01-01', end_date: '2024-01-31' })
-    )
+    it('sets errorReport on API error response', async () => {
+      mockGenerateSalesReport.mockRejectedValueOnce({
+        status_code: 500,
+        message: 'Internal Server Error',
+      })
 
-    await waitFor(() => {
-      expect(result.current.topProducts).toHaveLength(5)
+      const { result } = renderHook(() =>
+        useDashboard({ start_date: '2024-06-01', end_date: '2024-06-30' })
+      )
+
+      await result.current.generateSalesReport({
+        start_date: '2024-06-01',
+        end_date: '2024-06-30',
+      })
+
+      await waitFor(() => {
+        expect(result.current.errorReport).toBe('Internal Server Error')
+        expect(result.current.loadingReport).toBe(false)
+        expect(result.current.salesReport).toBe(null)
+      })
     })
-  })
 
-  it('sets_isLoading_true_while_fetching', async () => {
-    mockApiGet.mockImplementation(
-      () =>
-        new Promise((resolve) => setTimeout(() => resolve({ status: 200, data: { products: [] } }), 500))
-    )
+    it('does not call API and sets errorReport if start_date or end_date is missing', async () => {
+      const { result } = renderHook(() =>
+        useDashboard({ start_date: '2024-06-01', end_date: '2024-06-30' })
+      )
 
-    const { result } = renderHook(() =>
-      useDashboard({ start_date: '2024-01-01', end_date: '2024-01-31' })
-    )
+      await result.current.generateSalesReport({
+        start_date: '',
+        end_date: '2024-06-30',
+      })
 
-    expect(result.current.topProductsLoading).toBe(true)
+      expect(mockGenerateSalesReport).not.toHaveBeenCalled()
+      expect(result.current.errorReport).toBe('start_date and end_date are required')
+      expect(result.current.loadingReport).toBe(false)
+      expect(result.current.salesReport).toBe(null)
+    })
+
+    it('resets errorReport before new request', async () => {
+      mockGenerateSalesReport.mockResolvedValueOnce({
+        total_sales: 100,
+        total_revenue: 5000.0,
+        top_products: [],
+      })
+
+      const { result } = renderHook(() =>
+        useDashboard({ start_date: '2024-06-01', end_date: '2024-06-30' })
+      )
+
+      await result.current.generateSalesReport({
+        start_date: '2024-06-01',
+        end_date: '2024-06-30',
+      })
+
+      await waitFor(() => {
+        expect(result.current.errorReport).toBe(null)
+      })
+    })
+
+    it('handles empty top_products array in response', async () => {
+      mockGenerateSalesReport.mockResolvedValueOnce({
+        total_sales: 0,
+        total_revenue: 0.0,
+        top_products: [],
+      })
+
+      const { result } = renderHook(() =>
+        useDashboard({ start_date: '2024-06-01', end_date: '2024-06-30' })
+      )
+
+      await result.current.generateSalesReport({
+        start_date: '2024-06-01',
+        end_date: '2024-06-30',
+      })
+
+      await waitFor(() => {
+        expect(result.current.salesReport?.top_products).toEqual([])
+      })
+    })
   })
 })

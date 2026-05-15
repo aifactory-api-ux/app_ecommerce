@@ -1,50 +1,77 @@
 # API_CONTRACT.md
 
-## 1. Get Sales Summary
-
-| Method | Path                              | Auth Required | Query Parameters                                                                 | Request Body | Response Status | Response Body    |
-|--------|-----------------------------------|---------------|----------------------------------------------------------------------------------|--------------|-----------------|-----------------|
-| GET    | /api/dashboard/sales-summary      | No            | - start_date (string, required, ISO date)<br>- end_date (string, required, ISO date) | None         | 200 OK          | SalesSummary    |
-
-**SalesSummary**
-- total_sales: int
-- total_revenue: float
-- period_start: string (ISO date)
-- period_end: string (ISO date)
+## Endpoints
 
 ---
 
-## 2. Get Top Products
+### 1. Get Sales Summary
 
-| Method | Path                              | Auth Required | Query Parameters                                                                                  | Request Body | Response Status | Response Body         |
-|--------|-----------------------------------|---------------|---------------------------------------------------------------------------------------------------|--------------|-----------------|----------------------|
-| GET    | /api/dashboard/top-products       | No            | - limit (integer, optional, default: 5)<br>- start_date (string, required, ISO date)<br>- end_date (string, required, ISO date) | None         | 200 OK          | TopProductsResponse  |
+| Method | Path                              | Query Parameters                                                                 | Request Body | Response Status | Response Schema   | Auth Required |
+|--------|-----------------------------------|----------------------------------------------------------------------------------|--------------|-----------------|-------------------|--------------|
+| GET    | /api/dashboard/sales-summary      | start_date (string, required, ISO date)<br>end_date (string, required, ISO date) | None         | 200 OK          | SalesSummary      | No           |
 
-**TopProductsResponse**
-- products: TopProduct[]
+#### Response Schema: SalesSummary
 
-**TopProduct**
-- product_id: int
-- product_name: string
-- units_sold: int
-- revenue: float
+| Field         | Type    |
+|---------------|---------|
+| total_sales   | int     |
+| total_revenue | float   |
+| period_start  | date    |
+| period_end    | date    |
 
 ---
 
-## 3. Generate Sales Report
+### 2. Get Top Selling Products
 
-| Method | Path                              | Auth Required | Request Body                                                                                      | Response Status | Response Body         |
-|--------|-----------------------------------|---------------|---------------------------------------------------------------------------------------------------|-----------------|----------------------|
-| POST   | /api/dashboard/sales-report       | No            | SalesReportRequest                                                                                | 200 OK          | SalesReportResponse  |
+| Method | Path                              | Query Parameters                                                                                          | Request Body | Response Status | Response Schema       | Auth Required |
+|--------|-----------------------------------|-----------------------------------------------------------------------------------------------------------|--------------|-----------------|-----------------------|--------------|
+| GET    | /api/dashboard/top-products       | start_date (string, required, ISO date)<br>end_date (string, required, ISO date)<br>limit (int, optional, default: 5) | None         | 200 OK          | TopProductsResponse   | No           |
 
-**SalesReportRequest**
-- start_date: string (ISO date)
-- end_date: string (ISO date)
+#### Response Schema: TopProductsResponse
 
-**SalesReportResponse**
-- entries: SalesReportEntry[]
+| Field    | Type           |
+|----------|----------------|
+| products | List[ProductStat] |
 
-**SalesReportEntry**
-- date: string (ISO date)
-- sales: int
-- revenue: float
+#### ProductStat
+
+| Field        | Type   |
+|--------------|--------|
+| product_id   | int    |
+| product_name | str    |
+| units_sold   | int    |
+| revenue      | float  |
+
+---
+
+### 3. Generate Sales Report
+
+| Method | Path                              | Query Parameters | Request Body           | Response Status | Response Schema       | Auth Required |
+|--------|-----------------------------------|------------------|-----------------------|-----------------|-----------------------|--------------|
+| POST   | /api/dashboard/sales-report       | None             | SalesReportRequest    | 200 OK          | SalesReportResponse   | No           |
+
+#### Request Schema: SalesReportRequest
+
+| Field      | Type   |
+|------------|--------|
+| start_date | date   |
+| end_date   | date   |
+
+#### Response Schema: SalesReportResponse
+
+| Field         | Type               |
+|---------------|--------------------|
+| total_sales   | int                |
+| total_revenue | float              |
+| top_products  | List[ProductStat]  |
+
+#### ProductStat
+
+| Field        | Type   |
+|--------------|--------|
+| product_id   | int    |
+| product_name | str    |
+| units_sold   | int    |
+| revenue      | float  |
+
+---

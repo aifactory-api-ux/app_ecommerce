@@ -553,145 +553,179 @@ La implementación debe quedar preparada para:
 **Archivos:**
 - `frontend/run_tests.sh` (create/modify)
 
-#### 🔴 TEST — Tests: backend/dashboard-api/api.py
+#### 🔴 TEST — Tests: backend/dashboard-api/api/dashboard.py
 **Objetivo:** TDD — escribe los tests ANTES que el código de producción.
 **Archivos:**
-- `backend/dashboard-api/tests/test_api.py` (create/modify)
+- `backend/dashboard-api/tests/test_dashboard.py` (create/modify)
 **Casos de prueba:**
-- `test_get_top_products_happy_path_returns_top_products`: GET /api/dashboard/top-products with valid start_date, end_date, and default limit returns 200 OK and a TopProductsResponse with up to 5 products sorted by units_sold descending.
-  - Input: `{'query_params': {'start_date': '2024-01-01', 'end_date': '2024-01-31'}}`
-  - Expected: `{'status_code': 200, 'body_schema': {'products': [{'product_id': 'int', 'product_name': 'str', 'units_sold': 'int', 'revenue': 'float'}]}, 'max_products': 5, 'sorted_by': 'units_sold_desc'}`
-- `test_get_top_products_with_custom_limit_returns_limited_products`: GET /api/dashboard/top-products with valid start_date, end_date, and limit=3 returns 200 OK and a TopProductsResponse with up to 3 products.
-  - Input: `{'query_params': {'start_date': '2024-01-01', 'end_date': '2024-01-31', 'limit': 3}}`
-  - Expected: `{'status_code': 200, 'body_schema': {'products': [{'product_id': 'int', 'product_name': 'str', 'units_sold': 'int', 'revenue': 'float'}]}, 'max_products': 3}`
-- `test_get_top_products_missing_start_date_returns_422`: GET /api/dashboard/top-products without start_date returns 422 Unprocessable Entity.
-  - Input: `{'query_params': {'end_date': '2024-01-31'}}`
-  - Expected: `{'status_code': 422}`
-- `test_get_top_products_missing_end_date_returns_422`: GET /api/dashboard/top-products without end_date returns 422 Unprocessable Entity.
-  - Input: `{'query_params': {'start_date': '2024-01-01'}}`
-  - Expected: `{'status_code': 422}`
-- `test_get_top_products_invalid_limit_returns_422`: GET /api/dashboard/top-products with non-integer limit returns 422 Unprocessable Entity.
-  - Input: `{'query_params': {'start_date': '2024-01-01', 'end_date': '2024-01-31', 'limit': 'abc'}}`
-  - Expected: `{'status_code': 422}`
-- `test_get_top_products_start_date_after_end_date_returns_empty_list`: GET /api/dashboard/top-products with start_date after end_date returns 200 OK and an empty products list.
-  - Input: `{'query_params': {'start_date': '2024-02-01', 'end_date': '2024-01-01'}}`
-  - Expected: `{'status_code': 200, 'body_schema': {'products': []}}`
-- `test_get_top_products_no_sales_in_range_returns_empty_list`: GET /api/dashboard/top-products for a date range with no sales returns 200 OK and an empty products list.
-  - Input: `{'query_params': {'start_date': '1999-01-01', 'end_date': '1999-01-31'}}`
-  - Expected: `{'status_code': 200, 'body_schema': {'products': []}}`
-- `test_get_top_products_limit_greater_than_available_products_returns_all_products`: GET /api/dashboard/top-products with limit greater than number of products sold returns all available products.
-  - Input: `{'query_params': {'start_date': '2024-01-01', 'end_date': '2024-01-31', 'limit': 100}}`
-  - Expected: `{'status_code': 200, 'body_schema': {'products': 'all_available'}}`
+- `test_sales_report_request_model_accepts_valid_dates`: SalesReportRequest Pydantic model accepts valid start_date and end_date fields.
+  - Input: `{'start_date': '2024-01-01', 'end_date': '2024-01-31'}`
+  - Expected: `{'model_valid': True}`
+- `test_sales_report_request_model_missing_start_date_raises_validation_error`: SalesReportRequest model missing start_date raises ValidationError.
+  - Input: `{'end_date': '2024-01-31'}`
+  - Expected: `{'exception': 'ValidationError'}`
+- `test_sales_report_request_model_invalid_date_format_raises_validation_error`: SalesReportRequest model with invalid date format raises ValidationError.
+  - Input: `{'start_date': '2024/01/01', 'end_date': '2024-01-31'}`
+  - Expected: `{'exception': 'ValidationError'}`
+- `test_sales_report_response_model_accepts_valid_data`: SalesReportResponse model accepts valid total_sales, total_revenue, and top_products fields.
+  - Input: `{'total_sales': 10, 'total_revenue': 1234.56, 'top_products': [{'product_id': 1, 'product_name': 'Product A', 'units_sold': 5, 'revenue': 500.0}]}`
+  - Expected: `{'model_valid': True}`
+- `test_sales_report_response_model_empty_top_products_list_valid`: SalesReportResponse model with empty top_products list is valid.
+  - Input: `{'total_sales': 0, 'total_revenue': 0.0, 'top_products': []}`
+  - Expected: `{'model_valid': True}`
 
-#### 🔴 TEST — Tests: backend/dashboard-api/crud.py
+#### 🔴 TEST — Tests: backend/dashboard-api/services/dashboard.py
 **Objetivo:** TDD — escribe los tests ANTES que el código de producción.
 **Archivos:**
-- `backend/dashboard-api/tests/test_crud.py` (create/modify)
+- `backend/dashboard-api/tests/test_dashboard.py` (create/modify)
 **Casos de prueba:**
-- `test_get_top_products_returns_products_sorted_by_units_sold`: get_top_products returns a list of TopProduct objects sorted by units_sold descending, limited by the limit parameter.
-  - Input: `{'start_date': '2024-01-01', 'end_date': '2024-01-31', 'limit': 5}`
-  - Expected: `{'products_sorted_by': 'units_sold_desc', 'max_products': 5}`
-- `test_get_top_products_with_no_sales_returns_empty_list`: get_top_products returns an empty list when there are no sales in the given date range.
-  - Input: `{'start_date': '1999-01-01', 'end_date': '1999-01-31', 'limit': 5}`
-  - Expected: `{'products': []}`
-- `test_get_top_products_with_limit_greater_than_products_returns_all_products`: get_top_products returns all available products if limit is greater than the number of products sold in the range.
-  - Input: `{'start_date': '2024-01-01', 'end_date': '2024-01-31', 'limit': 100}`
-  - Expected: `{'products': 'all_available'}`
-- `test_get_top_products_with_zero_limit_returns_empty_list`: get_top_products with limit=0 returns an empty list.
-  - Input: `{'start_date': '2024-01-01', 'end_date': '2024-01-31', 'limit': 0}`
-  - Expected: `{'products': []}`
-- `test_get_top_products_with_start_date_after_end_date_returns_empty_list`: get_top_products with start_date after end_date returns an empty list.
-  - Input: `{'start_date': '2024-02-01', 'end_date': '2024-01-01', 'limit': 5}`
-  - Expected: `{'products': []}`
+- `test_sales_report_request_model_accepts_valid_dates`: SalesReportRequest Pydantic model accepts valid start_date and end_date fields.
+  - Input: `{'start_date': '2024-01-01', 'end_date': '2024-01-31'}`
+  - Expected: `{'model_valid': True}`
+- `test_sales_report_request_model_missing_start_date_raises_validation_error`: SalesReportRequest model missing start_date raises ValidationError.
+  - Input: `{'end_date': '2024-01-31'}`
+  - Expected: `{'exception': 'ValidationError'}`
+- `test_sales_report_request_model_invalid_date_format_raises_validation_error`: SalesReportRequest model with invalid date format raises ValidationError.
+  - Input: `{'start_date': '2024/01/01', 'end_date': '2024-01-31'}`
+  - Expected: `{'exception': 'ValidationError'}`
+- `test_sales_report_response_model_accepts_valid_data`: SalesReportResponse model accepts valid total_sales, total_revenue, and top_products fields.
+  - Input: `{'total_sales': 10, 'total_revenue': 1234.56, 'top_products': [{'product_id': 1, 'product_name': 'Product A', 'units_sold': 5, 'revenue': 500.0}]}`
+  - Expected: `{'model_valid': True}`
+- `test_sales_report_response_model_empty_top_products_list_valid`: SalesReportResponse model with empty top_products list is valid.
+  - Input: `{'total_sales': 0, 'total_revenue': 0.0, 'top_products': []}`
+  - Expected: `{'model_valid': True}`
 
-#### 🟢 PROD — Implementar endpoint GET `/api/dashboard/top-products` en backend
-**Objetivo:** Agregar el endpoint GET `/api/dashboard/top-products` en el backend para devolver los productos más vendidos en un rango de fechas, cumpliendo el contrato de SPEC.md.
+#### 🔴 TEST — Tests: backend/dashboard-api/schemas/dashboard.py
+**Objetivo:** TDD — escribe los tests ANTES que el código de producción.
 **Archivos:**
-- `backend/dashboard-api/api.py` (create/modify)
-- `backend/dashboard-api/crud.py` (create/modify)
+- `backend/dashboard-api/tests/test_dashboard.py` (create/modify)
+**Casos de prueba:**
+- `test_sales_report_request_model_accepts_valid_dates`: SalesReportRequest Pydantic model accepts valid start_date and end_date fields.
+  - Input: `{'start_date': '2024-01-01', 'end_date': '2024-01-31'}`
+  - Expected: `{'model_valid': True}`
+- `test_sales_report_request_model_missing_start_date_raises_validation_error`: SalesReportRequest model missing start_date raises ValidationError.
+  - Input: `{'end_date': '2024-01-31'}`
+  - Expected: `{'exception': 'ValidationError'}`
+- `test_sales_report_request_model_invalid_date_format_raises_validation_error`: SalesReportRequest model with invalid date format raises ValidationError.
+  - Input: `{'start_date': '2024/01/01', 'end_date': '2024-01-31'}`
+  - Expected: `{'exception': 'ValidationError'}`
+- `test_sales_report_response_model_accepts_valid_data`: SalesReportResponse model accepts valid total_sales, total_revenue, and top_products fields.
+  - Input: `{'total_sales': 10, 'total_revenue': 1234.56, 'top_products': [{'product_id': 1, 'product_name': 'Product A', 'units_sold': 5, 'revenue': 500.0}]}`
+  - Expected: `{'model_valid': True}`
+- `test_sales_report_response_model_empty_top_products_list_valid`: SalesReportResponse model with empty top_products list is valid.
+  - Input: `{'total_sales': 0, 'total_revenue': 0.0, 'top_products': []}`
+  - Expected: `{'model_valid': True}`
+
+#### 🟢 PROD — Implementar endpoint POST /api/dashboard/sales-report en backend
+**Objetivo:** Agregar el endpoint /api/dashboard/sales-report (POST) en el backend, que recibe un objeto SalesReportRequest y retorna un objeto SalesReportResponse según el contrato de SPEC.md. Implementar la lógica en el servicio y exponer el endpoint en el router.
+**Archivos:**
+- `backend/dashboard-api/api/dashboard.py` (create/modify)
+- `backend/dashboard-api/services/dashboard.py` (create/modify)
+- `backend/dashboard-api/schemas/dashboard.py` (create/modify)
 
 ### Wave 2
+
+#### 🔴 TEST — Tests: frontend/src/api/dashboard.ts
+**Objetivo:** TDD — escribe los tests ANTES que el código de producción.
+**Archivos:**
+- `frontend/tests/api/dashboard.test.ts` (create/modify)
+**Casos de prueba:**
+- `generateSalesReport sends POST request with correct body and returns parsed SalesReportResponse on 200`: When generateSalesReport is called with valid start_date and end_date, it must send a POST request to /api/dashboard/sales-report with the correct JSON body and return the parsed SalesReportResponse object on a 200 response.
+  - Input: `{'start_date': '2024-06-01', 'end_date': '2024-06-30'}`
+  - Expected: `{'request': {'method': 'POST', 'url': '/api/dashboard/sales-report', 'body': {'start_date': '2024-06-01', 'end_date': '2024-06-30'}}, 'response': {'status_code': 200, 'body': {'total_sales': 100, 'total_revenue': 12345.67, 'top_products': [{'product_id': 1, 'product_name': 'Widget', 'units_sold': 50, 'revenue': 5000.0}]}}, 'result': {'total_sales': 100, 'total_revenue': 12345.67, 'top_products': [{'product_id': 1, 'product_name': 'Widget', 'units_sold': 50, 'revenue': 5000.0}]}}`
+- `generateSalesReport throws validation error if start_date is missing`: If generateSalesReport is called without start_date, it must throw a validation error before making any HTTP request.
+  - Input: `{'end_date': '2024-06-30'}`
+  - Expected: `{'error': 'start_date is required'}`
+- `generateSalesReport throws validation error if end_date is missing`: If generateSalesReport is called without end_date, it must throw a validation error before making any HTTP request.
+  - Input: `{'start_date': '2024-06-01'}`
+  - Expected: `{'error': 'end_date is required'}`
+- `generateSalesReport throws validation error if start_date is not ISO date string`: If generateSalesReport is called with a start_date that is not a valid ISO date string, it must throw a validation error before making any HTTP request.
+  - Input: `{'start_date': 'not-a-date', 'end_date': '2024-06-30'}`
+  - Expected: `{'error': 'start_date must be a valid ISO date string'}`
+- `generateSalesReport throws validation error if end_date is not ISO date string`: If generateSalesReport is called with an end_date that is not a valid ISO date string, it must throw a validation error before making any HTTP request.
+  - Input: `{'start_date': '2024-06-01', 'end_date': 'not-a-date'}`
+  - Expected: `{'error': 'end_date must be a valid ISO date string'}`
+- `generateSalesReport returns empty top_products array if API returns empty list`: If the API responds with an empty top_products array, generateSalesReport must return a SalesReportResponse with top_products as an empty array.
+  - Input: `{'start_date': '2024-06-01', 'end_date': '2024-06-30'}`
+  - Expected: `{'request': {'method': 'POST', 'url': '/api/dashboard/sales-report', 'body': {'start_date': '2024-06-01', 'end_date': '2024-06-30'}}, 'response': {'status_code': 200, 'body': {'total_sales': 0, 'total_revenue': 0.0, 'top_products': []}}, 'result': {'total_sales': 0, 'total_revenue': 0.0, 'top_products': []}}`
+- `generateSalesReport throws error if API returns 400 Bad Request`: If the API responds with a 400 Bad Request, generateSalesReport must throw an error containing the status code and error message.
+  - Input: `{'start_date': '2024-06-01', 'end_date': '2024-06-30'}`
+  - Expected: `{'request': {'method': 'POST', 'url': '/api/dashboard/sales-report', 'body': {'start_date': '2024-06-01', 'end_date': '2024-06-30'}}, 'response': {'status_code': 400, 'body': {'detail': 'Invalid date range'}}, 'error': {'status_code': 400, 'message': 'Invalid date range'}}`
+- `generateSalesReport throws error if API returns 500 Internal Server Error`: If the API responds with a 500 Internal Server Error, generateSalesReport must throw an error containing the status code and error message.
+  - Input: `{'start_date': '2024-06-01', 'end_date': '2024-06-30'}`
+  - Expected: `{'request': {'method': 'POST', 'url': '/api/dashboard/sales-report', 'body': {'start_date': '2024-06-01', 'end_date': '2024-06-30'}}, 'response': {'status_code': 500, 'body': {'detail': 'Internal Server Error'}}, 'error': {'status_code': 500, 'message': 'Internal Server Error'}}`
+- `generateSalesReport throws error if network request fails`: If the network request fails (e.g. network error, timeout), generateSalesReport must throw an error indicating a network failure.
+  - Input: `{'start_date': '2024-06-01', 'end_date': '2024-06-30'}`
+  - Expected: `{'error': 'Network Error'}`
+- `generateSalesReport supports start_date and end_date at the same day (edge case)`: If start_date and end_date are the same valid ISO date string, generateSalesReport must send the request and return the API response as usual.
+  - Input: `{'start_date': '2024-06-15', 'end_date': '2024-06-15'}`
+  - Expected: `{'request': {'method': 'POST', 'url': '/api/dashboard/sales-report', 'body': {'start_date': '2024-06-15', 'end_date': '2024-06-15'}}, 'response': {'status_code': 200, 'body': {'total_sales': 1, 'total_revenue': 100.0, 'top_products': [{'product_id': 2, 'product_name': 'SingleDayProduct', 'units_sold': 1, 'revenue': 100.0}]}}, 'result': {'total_sales': 1, 'total_revenue': 100.0, 'top_products': [{'product_id': 2, 'product_name': 'SingleDayProduct', 'units_sold': 1, 'revenue': 100.0}]}}`
+
+#### 🟢 PROD — Implementar función generateSalesReport en el cliente frontend
+**Objetivo:** Agregar la función generateSalesReport en el archivo de cliente API del frontend para consumir el endpoint /api/dashboard/sales-report según el contrato de SPEC.md.
+**Archivos:**
+- `frontend/src/api/dashboard.ts` (create/modify)
+
+### Wave 3
 
 #### 🔴 TEST — Tests: frontend/src/hooks/useDashboard.ts
 **Objetivo:** TDD — escribe los tests ANTES que el código de producción.
 **Archivos:**
 - `frontend/tests/hooks/useDashboard.test.tsx` (create/modify)
 **Casos de prueba:**
-- `returns_top_products_data_on_successful_fetch`: useTopProducts returns products data when API responds with 200 and valid TopProductsResponse.
-  - Input: `{'params': {'start_date': '2024-01-01', 'end_date': '2024-01-31', 'limit': 3}, 'mock_api_response': {'status': 200, 'body': {'products': [{'product_id': 1, 'product_name': 'Product A', 'units_sold': 10, 'revenue': 100.0}]}}}`
-  - Expected: `{'data': {'products': [{'product_id': 1, 'product_name': 'Product A', 'units_sold': 10, 'revenue': 100.0}]}, 'isLoading': False, 'isError': False}`
-- `returns_error_on_422_response`: useTopProducts sets isError=true when API responds with 422 Unprocessable Entity.
-  - Input: `{'params': {'start_date': '', 'end_date': '2024-01-31'}, 'mock_api_response': {'status': 422, 'body': {}}}`
-  - Expected: `{'data': None, 'isLoading': False, 'isError': True}`
-- `returns_empty_products_list_when_api_returns_empty`: useTopProducts returns an empty products list when API responds with 200 and products: [].
-  - Input: `{'params': {'start_date': '2099-01-01', 'end_date': '2099-01-31'}, 'mock_api_response': {'status': 200, 'body': {'products': []}}}`
-  - Expected: `{'data': {'products': []}, 'isLoading': False, 'isError': False}`
-- `uses_default_limit_when_limit_not_provided`: useTopProducts omits limit param and expects API to return up to 5 products.
-  - Input: `{'params': {'start_date': '2024-01-01', 'end_date': '2024-01-31'}, 'mock_api_response': {'status': 200, 'body': {'products': [{'product_id': 1, 'product_name': 'A', 'units_sold': 1, 'revenue': 10.0}, {'product_id': 2, 'product_name': 'B', 'units_sold': 2, 'revenue': 20.0}, {'product_id': 3, 'product_name': 'C', 'units_sold': 3, 'revenue': 30.0}, {'product_id': 4, 'product_name': 'D', 'units_sold': 4, 'revenue': 40.0}, {'product_id': 5, 'product_name': 'E', 'units_sold': 5, 'revenue': 50.0}]}}}`
-  - Expected: `{'data': {'products': [{'product_id': 1, 'product_name': 'A', 'units_sold': 1, 'revenue': 10.0}, {'product_id': 2, 'product_name': 'B', 'units_sold': 2, 'revenue': 20.0}, {'product_id': 3, 'product_name': 'C', 'units_sold': 3, 'revenue': 30.0}, {'product_id': 4, 'product_name': 'D', 'units_sold': 4, 'revenue': 40.0}, {'product_id': 5, 'product_name': 'E', 'units_sold': 5, 'revenue': 50.0}]}, 'isLoading': False, 'isError': False}`
-- `sets_isLoading_true_while_fetching`: useTopProducts sets isLoading=true while request is in progress.
-  - Input: `{'params': {'start_date': '2024-01-01', 'end_date': '2024-01-31'}, 'mock_api_response': {'delay': 500}}`
-  - Expected: `{'isLoading': True}`
+- `calls generateSalesReport and updates salesReport state on success`: When generateSalesReport is called with valid start_date and end_date, it should POST to /api/dashboard/sales-report, set loadingReport to true during the request, and update salesReport with the SalesReportResponse on success.
+  - Input: `{'start_date': '2024-06-01', 'end_date': '2024-06-30'}`
+  - Expected: `{'api_call': {'method': 'POST', 'url': '/api/dashboard/sales-report', 'body': {'start_date': '2024-06-01', 'end_date': '2024-06-30'}}, 'state_changes': [{'loadingReport': True, 'when': 'before response'}, {'salesReport': {'total_sales': 100, 'total_revenue': 5000.0, 'top_products': [{'product_id': 1, 'product_name': 'Product A', 'units_sold': 50, 'revenue': 2500.0}]}, 'loadingReport': False, 'errorReport': None, 'when': 'after response'}]}`
+- `sets errorReport on API error response`: If the API returns an error (e.g., 500), generateSalesReport should set errorReport with the error message and loadingReport should be false.
+  - Input: `{'start_date': '2024-06-01', 'end_date': '2024-06-30'}`
+  - Expected: `{'api_call': {'method': 'POST', 'url': '/api/dashboard/sales-report'}, 'state_changes': [{'loadingReport': True, 'when': 'before response'}, {'errorReport': 'Internal Server Error', 'loadingReport': False, 'salesReport': None, 'when': 'after response'}]}`
+- `does not call API and sets errorReport if start_date or end_date is missing`: If generateSalesReport is called with missing start_date or end_date, it should not call the API and should set errorReport to a validation message.
+  - Input: `{'start_date': '', 'end_date': '2024-06-30'}`
+  - Expected: `{'api_call': 'not called', 'state_changes': [{'errorReport': 'start_date and end_date are required', 'loadingReport': False, 'salesReport': None}]}`
+- `resets errorReport before new request`: When generateSalesReport is called, errorReport should be reset to null before the API call is made.
+  - Input: `{'start_date': '2024-06-01', 'end_date': '2024-06-30'}`
+  - Expected: `{'state_changes': [{'errorReport': None, 'when': 'before API call'}]}`
+- `handles empty top_products array in response`: If the API returns a SalesReportResponse with an empty top_products array, salesReport.top_products should be an empty array.
+  - Input: `{'start_date': '2024-06-01', 'end_date': '2024-06-30'}`
+  - Expected: `{'api_call': {'method': 'POST', 'url': '/api/dashboard/sales-report'}, 'state_changes': [{'salesReport': {'total_sales': 0, 'total_revenue': 0.0, 'top_products': []}}]}`
 
-#### 🟢 PROD — Agregar hook React Query para top products en frontend
-**Objetivo:** Implementar en el frontend la lógica React Query para consumir el endpoint `/api/dashboard/top-products` y exponer el estado y métodos en el hook `useDashboard`.
+#### 🔴 TEST — Tests: frontend/src/components/ReportGenerator.tsx
+**Objetivo:** TDD — escribe los tests ANTES que el código de producción.
+**Archivos:**
+- `frontend/tests/components/ReportGenerator.test.tsx` (create/modify)
+**Casos de prueba:**
+- `calls onGenerate with correct dates when form is submitted`: When the user fills in start_date and end_date and submits the form, the onGenerate prop should be called with the correct SalesReportRequest object.
+  - Input: `{'form': {'start_date': '2024-06-01', 'end_date': '2024-06-30'}}`
+  - Expected: `{'onGenerate_called_with': {'start_date': '2024-06-01', 'end_date': '2024-06-30'}}`
+- `displays loading indicator when loadingReport is true`: If the loadingReport prop is true, the component should display a loading spinner or indicator.
+  - Input: `{'props': {'loadingReport': True}}`
+  - Expected: `{'ui': 'loading spinner is visible'}`
+- `renders sales report data when salesReport prop is provided`: If the salesReport prop is provided, the component should display total_sales, total_revenue, and a list of top_products with product_id, product_name, units_sold, and revenue.
+  - Input: `{'props': {'salesReport': {'total_sales': 100, 'total_revenue': 5000.0, 'top_products': [{'product_id': 1, 'product_name': 'Product A', 'units_sold': 50, 'revenue': 2500.0}]}}}`
+  - Expected: `{'ui': ['total_sales: 100', 'total_revenue: 5000.0', 'top_products: Product A (50 units, 2500.0 revenue)']}`
+- `shows error message when errorReport prop is set`: If the errorReport prop is set, the component should display the error message to the user.
+  - Input: `{'props': {'errorReport': 'Internal Server Error'}}`
+  - Expected: `{'ui': "error message 'Internal Server Error' is visible"}`
+- `disables submit button when loadingReport is true`: When loadingReport is true, the submit button should be disabled to prevent multiple submissions.
+  - Input: `{'props': {'loadingReport': True}}`
+  - Expected: `{'ui': 'submit button is disabled'}`
+- `renders empty state when salesReport.top_products is empty`: If salesReport.top_products is an empty array, the component should display an appropriate empty state message.
+  - Input: `{'props': {'salesReport': {'total_sales': 0, 'total_revenue': 0.0, 'top_products': []}}}`
+  - Expected: `{'ui': 'empty state message for top_products is visible'}`
+- `validates required fields and shows validation error if missing`: If the user submits the form without filling start_date or end_date, the component should show a validation error message and not call onGenerate.
+  - Input: `{'form': {'start_date': '', 'end_date': '2024-06-30'}}`
+  - Expected: `{'ui': 'validation error message is visible', 'onGenerate_called': False}`
+
+#### 🟢 PROD — Integrar generación de reporte en hook useDashboard y componente ReportGenerator
+**Objetivo:** Integrar la función de generación de reporte en el hook useDashboard y conectar el componente ReportGenerator para permitir la generación y visualización del reporte desde el frontend.
 **Archivos:**
 - `frontend/src/hooks/useDashboard.ts` (create/modify)
-
-### Wave 3
-
-#### 🔴 TEST — Tests: frontend/src/components/TopProductsTable.tsx
-**Objetivo:** TDD — escribe los tests ANTES que el código de producción.
-**Archivos:**
-- `frontend/tests/components/TopProductsTable.test.tsx` (create/modify)
-**Casos de prueba:**
-- `renders table with top products data`: Should render a table displaying product_id, product_name, units_sold, and revenue for each TopProduct in props.products.
-  - Input: `{'products': [{'product_id': 1, 'product_name': 'Widget A', 'units_sold': 100, 'revenue': 2500.5}, {'product_id': 2, 'product_name': 'Widget B', 'units_sold': 50, 'revenue': 1200}]}`
-  - Expected: `{'table_rows': 2, 'fields_present': ['product_id', 'product_name', 'units_sold', 'revenue'], 'values_present': [['1', 'Widget A', '100', '2500.5'], ['2', 'Widget B', '50', '1200']]}`
-- `renders empty state when products array is empty`: Should display an appropriate empty state message or UI when props.products is an empty array.
-  - Input: `{'products': []}`
-  - Expected: `{'table_rows': 0, 'empty_state_displayed': True}`
-- `renders correctly with missing optional fields`: Should render table rows even if some TopProduct objects have missing or undefined optional fields (simulate partial data).
-  - Input: `{'products': [{'product_id': 3, 'product_name': 'Widget C', 'units_sold': 0, 'revenue': 0}, {'product_id': 4, 'product_name': '', 'units_sold': 10, 'revenue': 100}]}`
-  - Expected: `{'table_rows': 2, 'fields_present': ['product_id', 'product_name', 'units_sold', 'revenue'], 'values_present': [['3', 'Widget C', '0', '0'], ['4', '', '10', '100']]}`
-- `renders loading state when loading prop is true`: Should display a loading indicator or skeleton when loading prop is true.
-  - Input: `{'products': [], 'loading': True}`
-  - Expected: `{'loading_indicator_displayed': True}`
-- `renders error state when error prop is present`: Should display an error message or UI when error prop is provided.
-  - Input: `{'products': [], 'error': 'Failed to fetch top products'}`
-  - Expected: `{'error_message_displayed': True, 'error_text': 'Failed to fetch top products'}`
-
-#### 🔴 TEST — Tests: frontend/src/App.tsx
-**Objetivo:** TDD — escribe los tests ANTES que el código de producción.
-**Archivos:**
-- `frontend/tests/App.test.tsx` (create/modify)
-**Casos de prueba:**
-- `renders TopProductsTable with data from useDashboard`: Should render TopProductsTable and pass products data from useDashboard hook when API returns TopProductsResponse with products.
-  - Input: `{'mock_useDashboard': {'topProducts': [{'product_id': 1, 'product_name': 'Widget A', 'units_sold': 100, 'revenue': 2500.5}], 'topProductsLoading': False, 'topProductsError': None}}`
-  - Expected: `{'TopProductsTable_rendered': True, 'table_rows': 1, 'values_present': [['1', 'Widget A', '100', '2500.5']]}`
-- `shows loading state in TopProductsTable when topProductsLoading is true`: Should render TopProductsTable with loading indicator when useDashboard returns topProductsLoading as true.
-  - Input: `{'mock_useDashboard': {'topProducts': [], 'topProductsLoading': True, 'topProductsError': None}}`
-  - Expected: `{'TopProductsTable_rendered': True, 'loading_indicator_displayed': True}`
-- `shows error state in TopProductsTable when topProductsError is present`: Should render TopProductsTable with error message when useDashboard returns topProductsError.
-  - Input: `{'mock_useDashboard': {'topProducts': [], 'topProductsLoading': False, 'topProductsError': 'Network error'}}`
-  - Expected: `{'TopProductsTable_rendered': True, 'error_message_displayed': True, 'error_text': 'Network error'}`
-- `renders TopProductsTable with empty state when topProducts is empty`: Should render TopProductsTable with empty state UI when useDashboard returns an empty topProducts array.
-  - Input: `{'mock_useDashboard': {'topProducts': [], 'topProductsLoading': False, 'topProductsError': None}}`
-  - Expected: `{'TopProductsTable_rendered': True, 'table_rows': 0, 'empty_state_displayed': True}`
-- `passes correct limit and date range to useDashboard hook`: Should call useDashboard with correct limit, start_date, and end_date parameters when rendering App.
-  - Input: `{'date_range': {'start_date': '2024-01-01', 'end_date': '2024-01-31'}, 'limit': 5}`
-  - Expected: `{'useDashboard_called_with': {'limit': 5, 'start_date': '2024-01-01', 'end_date': '2024-01-31'}}`
-
-#### 🟢 PROD — Mostrar tabla de top products en frontend
-**Objetivo:** Renderizar la tabla de productos más vendidos usando el componente `TopProductsTable`, alimentado por el hook `useDashboard`.
-**Archivos:**
-- `frontend/src/components/TopProductsTable.tsx` (create/modify)
-- `frontend/src/App.tsx` (create/modify)
+- `frontend/src/components/ReportGenerator.tsx` (create/modify)
 
 ### Wave 4
 
-#### 🔴 TEST — Tests de la feature y regresión
-**Objetivo:** Agregar pruebas unitarias y de integración para el endpoint `/api/dashboard/top-products` en backend y pruebas de integración/renderizado para el hook y componente en frontend.
+#### 🔴 TEST — Tests de la feature y regresión de módulos afectados
+**Objetivo:** Agregar pruebas unitarias y de integración para el endpoint /api/dashboard/sales-report en backend y pruebas de integración para la generación de reporte en frontend, asegurando la cobertura de la nueva feature y la no regresión de los módulos afectados.
 
 ---
 
@@ -699,17 +733,17 @@ La implementación debe quedar preparada para:
 
 Crea o modifica **ÚNICAMENTE** estos archivos:
 
-- `backend/dashboard-api/api.py`
-- `backend/dashboard-api/crud.py`
+- `backend/dashboard-api/api/dashboard.py`
 - `backend/dashboard-api/run_tests.sh`
-- `backend/dashboard-api/tests/test_api.py`
-- `backend/dashboard-api/tests/test_crud.py`
+- `backend/dashboard-api/schemas/dashboard.py`
+- `backend/dashboard-api/services/dashboard.py`
+- `backend/dashboard-api/tests/test_dashboard.py`
 - `frontend/run_tests.sh`
-- `frontend/src/App.tsx`
-- `frontend/src/components/TopProductsTable.tsx`
+- `frontend/src/api/dashboard.ts`
+- `frontend/src/components/ReportGenerator.tsx`
 - `frontend/src/hooks/useDashboard.ts`
-- `frontend/tests/App.test.tsx`
-- `frontend/tests/components/TopProductsTable.test.tsx`
+- `frontend/tests/api/dashboard.test.ts`
+- `frontend/tests/components/ReportGenerator.test.tsx`
 - `frontend/tests/hooks/useDashboard.test.tsx`
 
 **FORBIDDEN:** No toques archivos fuera de esta lista.
@@ -746,14 +780,25 @@ backend/
     dependencies.py
     main.py
   cli.py
+  dashboard-api/
+    __init__.py
+    api.py
+    coverage/
+    crud.py
+    db.py
+    main.py
   requirements-dev.txt
   requirements.txt
   seed.py
+  shared/
+    __init__.py
+    models.py
 frontend/
   Dockerfile
   index.html
   package.json
   postcss.config.js
+  run_tests.sh
   src/
     App.tsx
     api/
@@ -762,6 +807,10 @@ frontend/
     hooks/
     index.css
   tailwind.config.js
+  tests/
+    App.test.tsx
+    components/
+    hooks/
   tsconfig.json
   tsconfig.node.json
   vite.config.ts

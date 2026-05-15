@@ -5,18 +5,21 @@
 - **Backend**
   - Python 3.11
   - FastAPI 0.110.0
-  - Pydantic 2.6.4
+  - Uvicorn 0.29.0
   - SQLAlchemy 2.0.29
   - PostgreSQL 15
-  - Uvicorn 0.29.0
+  - Pydantic 2.6.4
+  - Alembic 1.13.1
+
 - **Frontend**
   - React 18.2.0
   - TypeScript 5.4.2
   - Vite 5.2.0
   - React Query 4.39.3
   - Axios 1.6.7
+  - Material UI (MUI) 5.15.0
   - Chart.js 4.4.1
-  - Tailwind CSS 3.4.1
+
 - **Infrastructure**
   - Docker 26.0.0
   - Docker Compose 2.27.0
@@ -28,8 +31,6 @@
 ### Python (Pydantic Models)
 
 ```python
-# backend/shared/models.py
-
 from pydantic import BaseModel
 from datetime import date
 from typing import List
@@ -40,33 +41,28 @@ class SalesSummary(BaseModel):
     period_start: date
     period_end: date
 
-class TopProduct(BaseModel):
+class ProductStat(BaseModel):
     product_id: int
     product_name: str
     units_sold: int
     revenue: float
 
 class TopProductsResponse(BaseModel):
-    products: List[TopProduct]
+    products: List[ProductStat]
 
 class SalesReportRequest(BaseModel):
     start_date: date
     end_date: date
 
-class SalesReportEntry(BaseModel):
-    date: date
-    sales: int
-    revenue: float
-
 class SalesReportResponse(BaseModel):
-    entries: List[SalesReportEntry]
+    total_sales: int
+    total_revenue: float
+    top_products: List[ProductStat]
 ```
 
 ### TypeScript (Frontend Interfaces)
 
 ```typescript
-// src/types/models.ts
-
 export interface SalesSummary {
   total_sales: number;
   total_revenue: number;
@@ -74,7 +70,7 @@ export interface SalesSummary {
   period_end: string;   // ISO date string
 }
 
-export interface TopProduct {
+export interface ProductStat {
   product_id: number;
   product_name: string;
   units_sold: number;
@@ -82,7 +78,7 @@ export interface TopProduct {
 }
 
 export interface TopProductsResponse {
-  products: TopProduct[];
+  products: ProductStat[];
 }
 
 export interface SalesReportRequest {
@@ -90,14 +86,10 @@ export interface SalesReportRequest {
   end_date: string;   // ISO date string
 }
 
-export interface SalesReportEntry {
-  date: string; // ISO date string
-  sales: number;
-  revenue: number;
-}
-
 export interface SalesReportResponse {
-  entries: SalesReportEntry[];
+  total_sales: number;
+  total_revenue: number;
+  top_products: ProductStat[];
 }
 ```
 
@@ -109,26 +101,26 @@ export interface SalesReportResponse {
 
 - **Method:** GET
 - **Path:** `/api/dashboard/sales-summary`
-- **Request Body:** None
 - **Query Parameters:**
   - `start_date` (string, required, ISO date)
   - `end_date` (string, required, ISO date)
+- **Request Body:** None
 - **Response:**
   - **Status:** 200 OK
-  - **Body:** `SalesSummary`
+  - **Schema:** `SalesSummary`
 
-### 2. Get Top Products
+### 2. Get Top Selling Products
 
 - **Method:** GET
 - **Path:** `/api/dashboard/top-products`
-- **Request Body:** None
 - **Query Parameters:**
-  - `limit` (integer, optional, default: 5)
   - `start_date` (string, required, ISO date)
   - `end_date` (string, required, ISO date)
+  - `limit` (integer, optional, default: 5)
+- **Request Body:** None
 - **Response:**
   - **Status:** 200 OK
-  - **Body:** `TopProductsResponse`
+  - **Schema:** `TopProductsResponse`
 
 ### 3. Generate Sales Report
 
@@ -137,7 +129,7 @@ export interface SalesReportResponse {
 - **Request Body:** `SalesReportRequest`
 - **Response:**
   - **Status:** 200 OK
-  - **Body:** `SalesReportResponse`
+  - **Schema:** `SalesReportResponse`
 
 ---
 
@@ -145,69 +137,87 @@ export interface SalesReportResponse {
 
 ### PORT TABLE
 
-| Service         | Listening Port | Path                      |
-|-----------------|---------------|---------------------------|
-| dashboard-api   | 23010         | backend/dashboard-api/    |
+| Service         | Listening Port | Path                   |
+|-----------------|---------------|------------------------|
+| dashboard-api   | 23010         | backend/dashboard-api/ |
 
 ### FILE TREE
 
 ```
 .
 ├── backend/
+│   ├── dashboard-api/
+│   │   ├── main.py                # FastAPI app entry point
+│   │   ├── api/
+│   │   │   ├── __init__.py        # API router init
+│   │   │   └── dashboard.py       # Dashboard endpoints
+│   │   ├── models/
+│   │   │   ├── __init__.py        # Models package init
+│   │   │   └── sales.py           # SQLAlchemy models for sales, products
+│   │   ├── schemas/
+│   │   │   ├── __init__.py        # Schemas package init
+│   │   │   └── dashboard.py       # Pydantic models
+│   │   ├── services/
+│   │   │   ├── __init__.py        # Services package init
+│   │   │   └── dashboard.py       # Business logic for dashboard
+│   │   ├── db/
+│   │   │   ├── __init__.py        # DB package init
+│   │   │   └── session.py         # SQLAlchemy session setup
+│   │   ├── Dockerfile             # Dockerfile for dashboard-api
+│   │   ├── alembic.ini            # Alembic config
+│   │   └── migrations/            # Alembic migrations
+│   │       └── ...                # Migration scripts
 │   ├── shared/
-│   │   ├── __init__.py                  # Shared Python modules (data models, utils)
-│   │   └── models.py                    # Pydantic models for data contracts
-│   └── dashboard-api/
-│       ├── main.py                      # FastAPI app entry point
-│       ├── api.py                       # API route definitions
-│       ├── crud.py                      # Database access logic
-│       ├── db.py                        # Database session and engine setup
-│       ├── Dockerfile                   # Docker build for dashboard-api service
-│       ├── requirements.txt             # Python dependencies
-│       └── __init__.py                  # Package marker
+│   │   ├── __init__.py            # Shared utilities
+│   │   └── utils.py               # Date/time, formatting helpers
+│   └── .env.example               # Backend environment variables template
 ├── frontend/
 │   ├── src/
-│   │   ├── components/
-│   │   │   ├── SalesSummaryCard.tsx     # Card for sales summary metrics
-│   │   │   ├── TopProductsTable.tsx     # Table for top products
-│   │   │   ├── SalesReportChart.tsx     # Chart for sales report
-│   │   │   └── DateRangePicker.tsx      # Date range selection component
+│   │   ├── App.tsx                # Main React app
+│   │   ├── main.tsx               # Vite entry point
+│   │   ├── api/
+│   │   │   └── dashboard.ts       # API client functions
 │   │   ├── hooks/
-│   │   │   └── useDashboard.ts          # React Query hooks for dashboard data
+│   │   │   └── useDashboard.ts    # React Query hooks for dashboard
+│   │   ├── components/
+│   │   │   ├── SalesSummaryCard.tsx      # Sales summary widget
+│   │   │   ├── TopProductsTable.tsx      # Top products table
+│   │   │   ├── RevenueChart.tsx          # Revenue chart component
+│   │   │   └── ReportGenerator.tsx       # Report generation form
 │   │   ├── types/
-│   │   │   └── models.ts                # TypeScript interfaces for data contracts
-│   │   ├── App.tsx                      # Main app component
-│   │   ├── main.tsx                     # React entry point
-│   │   └── index.css                    # Tailwind CSS imports
+│   │   │   └── dashboard.ts        # TypeScript interfaces
+│   │   └── theme.ts                # MUI theme config
 │   ├── public/
-│   │   └── index.html                   # HTML entry point
-│   ├── Dockerfile                       # Docker build for frontend
-│   ├── package.json                     # NPM dependencies and scripts
-│   ├── tsconfig.json                    # TypeScript configuration
-│   └── vite.config.ts                   # Vite configuration
-├── docker-compose.yml                   # Multi-service orchestration
-├── .env.example                         # Environment variables template
-├── .gitignore                           # Git ignore rules
-├── README.md                            # Project documentation
-├── run.sh                               # Startup script for local development
+│   │   └── index.html              # HTML entry point
+│   ├── Dockerfile                  # Dockerfile for frontend
+│   └── .env.example                # Frontend environment variables template
+├── docker-compose.yml              # Multi-service orchestration
+├── run.sh                          # Startup script for local dev
+├── .gitignore                      # Git ignore rules
+├── README.md                       # Project documentation
 ```
 
 ---
 
 ## 5. ENVIRONMENT VARIABLES
 
-| Name                       | Type    | Description                                         | Example Value                |
-|----------------------------|---------|-----------------------------------------------------|------------------------------|
-| POSTGRES_HOST              | string  | Hostname for PostgreSQL database                    | db                           |
-| POSTGRES_PORT              | int     | PostgreSQL port (container-internal)                | 5432                         |
-| POSTGRES_USER              | string  | PostgreSQL username                                 | dashboard_user               |
-| POSTGRES_PASSWORD          | string  | PostgreSQL password                                 | dashboard_pass               |
-| POSTGRES_DB                | string  | PostgreSQL database name                            | dashboard_db                 |
-| DASHBOARD_API_PORT         | int     | Port dashboard-api listens on (container/host)      | 23010                        |
-| FRONTEND_PORT              | int     | Port frontend listens on (container/host)           | 23080                        |
-| BACKEND_CORS_ORIGINS       | string  | Comma-separated list of allowed CORS origins        | http://localhost:23080       |
-| SECRET_KEY                 | string  | Secret key for FastAPI session/security             | supersecretkey               |
-| TZ                         | string  | Timezone for backend containers                     | UTC                          |
+### Backend (.env.example)
+
+| Name                | Type    | Description                                 | Example Value         |
+|---------------------|---------|---------------------------------------------|----------------------|
+| POSTGRES_HOST       | string  | PostgreSQL host                             | db                   |
+| POSTGRES_PORT       | int     | PostgreSQL port (container-internal)        | 5432                 |
+| POSTGRES_USER       | string  | PostgreSQL username                         | dashboard_user       |
+| POSTGRES_PASSWORD   | string  | PostgreSQL password                         | dashboard_pass       |
+| POSTGRES_DB         | string  | PostgreSQL database name                    | dashboard_db         |
+| DASHBOARD_API_PORT  | int     | Dashboard API listening port                | 23010                |
+| ALLOWED_ORIGINS     | string  | CORS allowed origins (comma-separated)      | http://localhost:5173|
+
+### Frontend (.env.example)
+
+| Name                | Type    | Description                                 | Example Value         |
+|---------------------|---------|---------------------------------------------|----------------------|
+| VITE_API_URL        | string  | Base URL for dashboard API                  | http://localhost:23010|
 
 ---
 
@@ -215,53 +225,20 @@ export interface SalesReportResponse {
 
 ### Backend
 
-```python
-# backend/shared/models.py
-from backend.shared.models import (
-    SalesSummary,
-    TopProduct,
-    TopProductsResponse,
-    SalesReportRequest,
-    SalesReportEntry,
-    SalesReportResponse,
-)
-
-# backend/dashboard-api/api.py
-from backend.dashboard-api.api import (
-    get_sales_summary,
-    get_top_products,
-    generate_sales_report,
-)
-```
+- `from schemas.dashboard import SalesSummary, ProductStat, TopProductsResponse, SalesReportRequest, SalesReportResponse`
+- `from services.dashboard import get_sales_summary, get_top_products, generate_sales_report`
+- `from db.session import get_db`
+- `from shared.utils import parse_date_range, format_currency`
 
 ### Frontend
 
-```typescript
-// src/types/models.ts
-import {
-  SalesSummary,
-  TopProduct,
-  TopProductsResponse,
-  SalesReportRequest,
-  SalesReportEntry,
-  SalesReportResponse,
-} from './models';
-
-// src/hooks/useDashboard.ts
-import { useDashboard } from '../hooks/useDashboard';
-
-// src/components/SalesSummaryCard.tsx
-import { SalesSummaryCard } from './SalesSummaryCard';
-
-// src/components/TopProductsTable.tsx
-import { TopProductsTable } from './TopProductsTable';
-
-// src/components/SalesReportChart.tsx
-import { SalesReportChart } from './SalesReportChart';
-
-// src/components/DateRangePicker.tsx
-import { DateRangePicker } from './DateRangePicker';
-```
+- `import { SalesSummary, ProductStat, TopProductsResponse, SalesReportRequest, SalesReportResponse } from '../types/dashboard'`
+- `import { useDashboard } from '../hooks/useDashboard'`
+- `import { getSalesSummary, getTopProducts, generateSalesReport } from '../api/dashboard'`
+- `import SalesSummaryCard from '../components/SalesSummaryCard'`
+- `import TopProductsTable from '../components/TopProductsTable'`
+- `import RevenueChart from '../components/RevenueChart'`
+- `import ReportGenerator from '../components/ReportGenerator'`
 
 ---
 
@@ -269,32 +246,65 @@ import { DateRangePicker } from './DateRangePicker';
 
 ### Shared State Primitives
 
-```typescript
-// src/hooks/useDashboard.ts
+#### React Hook
 
+```typescript
 useDashboard() → {
-  salesSummary: SalesSummary | null,
-  topProducts: TopProduct[] | null,
-  salesReport: SalesReportResponse | null,
+  salesSummary: SalesSummary | undefined,
+  topProducts: ProductStat[] | undefined,
+  salesReport: SalesReportResponse | undefined,
   loadingSummary: boolean,
   loadingTopProducts: boolean,
   loadingReport: boolean,
   errorSummary: string | null,
   errorTopProducts: string | null,
   errorReport: string | null,
-  fetchSalesSummary: (startDate: string, endDate: string) => Promise<void>,
-  fetchTopProducts: (startDate: string, endDate: string, limit?: number) => Promise<void>,
-  generateSalesReport: (startDate: string, endDate: string) => Promise<void>,
+  fetchSalesSummary: (start_date: string, end_date: string) => void,
+  fetchTopProducts: (start_date: string, end_date: string, limit?: number) => void,
+  generateSalesReport: (data: SalesReportRequest) => Promise<void>
 }
 ```
 
 ### Reusable Components
 
+#### SalesSummaryCard
+
+```typescript
+SalesSummaryCard props: {
+  summary: SalesSummary,
+  loading: boolean,
+  error: string | null
+}
 ```
-SalesSummaryCard  props/inputs: { summary: SalesSummary | null, loading: boolean }
-TopProductsTable  props/inputs: { products: TopProduct[] | null, loading: boolean }
-SalesReportChart  props/inputs: { report: SalesReportResponse | null, loading: boolean }
-DateRangePicker   props/inputs: { startDate: string, endDate: string, onChange: (start: string, end: string) => void }
+
+#### TopProductsTable
+
+```typescript
+TopProductsTable props: {
+  products: ProductStat[],
+  loading: boolean,
+  error: string | null
+}
+```
+
+#### RevenueChart
+
+```typescript
+RevenueChart props: {
+  summary: SalesSummary,
+  loading: boolean
+}
+```
+
+#### ReportGenerator
+
+```typescript
+ReportGenerator props: {
+  onGenerate: (data: SalesReportRequest) => void,
+  loading: boolean,
+  error: string | null,
+  report: SalesReportResponse | undefined
+}
 ```
 
 ---
@@ -303,9 +313,6 @@ DateRangePicker   props/inputs: { startDate: string, endDate: string, onChange: 
 
 - **Frontend files:** `.tsx` (TypeScript React)
 - **Project language:** TypeScript (frontend), Python (backend)
-- **Entry point:** `/src/main.tsx` (as referenced in `<script type="module" src="/src/main.tsx"></script>` in `public/index.html`)
-- **All React components and hooks use `.tsx` or `.ts` extensions exclusively.**
-- **No `.jsx` or plain `.js` files in frontend source.**
-- **Backend Python files use `.py` exclusively.**
+- **Entry point:** `/src/main.tsx` (as referenced in `public/index.html`)
 
 ---

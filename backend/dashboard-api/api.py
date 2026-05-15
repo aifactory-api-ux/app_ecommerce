@@ -5,6 +5,8 @@ from typing import Optional
 
 from backend.dashboard-api.db import get_db
 from backend.dashboard-api.crud import get_top_products
+from backend.dashboard-api.schemas.dashboard import SalesReportRequest, SalesReportResponse
+from backend.dashboard-api.services.dashboard import generate_sales_report
 from backend.shared.models import TopProductsResponse, TopProduct
 
 router = APIRouter()
@@ -26,3 +28,11 @@ async def get_top_products_endpoint(
     products = await get_top_products(db, start_date, end_date, limit)
 
     return TopProductsResponse(products=products)
+
+
+@router.post("/sales-report", response_model=SalesReportResponse)
+async def create_sales_report(
+    request: SalesReportRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    return await generate_sales_report(db, request)
