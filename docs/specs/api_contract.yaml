@@ -1,0 +1,65 @@
+# API_CONTRACT.md
+
+## 1. Get Sales Summary
+
+| Method | Path                              | Query Parameters                                                                 | Request Body | Response Status | Response Schema   | Auth Required |
+|--------|-----------------------------------|----------------------------------------------------------------------------------|--------------|----------------|-------------------|--------------|
+| GET    | /api/dashboard/sales-summary      | - start_date (string, required, ISO date)<br>- end_date (string, required, ISO date) | None         | 200 OK         | SalesSummary      | No           |
+
+### Response Schema: SalesSummary
+
+| Field         | Type   |
+|---------------|--------|
+| total_sales   | int    |
+| total_revenue | float  |
+| period_start  | date   |
+| period_end    | date   |
+
+---
+
+## 2. Get Top Products
+
+| Method | Path                              | Query Parameters                                                                                          | Request Body | Response Status | Response Schema      | Auth Required |
+|--------|-----------------------------------|-----------------------------------------------------------------------------------------------------------|--------------|----------------|----------------------|--------------|
+| GET    | /api/dashboard/top-products       | - start_date (string, required, ISO date)<br>- end_date (string, required, ISO date)<br>- limit (integer, optional, default: 5) | None         | 200 OK         | TopProductsResponse  | No           |
+
+### Response Schema: TopProductsResponse
+
+| Field    | Type         |
+|----------|--------------|
+| products | List[TopProduct] |
+
+#### TopProduct
+
+| Field        | Type   |
+|--------------|--------|
+| product_id   | int    |
+| product_name | str    |
+| units_sold   | int    |
+| revenue      | float  |
+
+---
+
+## 3. Generate Sales Report
+
+| Method | Path                              | Query Parameters | Request Body           | Response Status | Response Schema        | Auth Required |
+|--------|-----------------------------------|------------------|-----------------------|----------------|-----------------------|--------------|
+| POST   | /api/dashboard/sales-report       | None             | SalesReportRequest    | 200 OK         | SalesReportResponse   | No           |
+
+### Request Body: SalesReportRequest
+
+| Field      | Type   | Required |
+|------------|--------|----------|
+| start_date | date   | Yes      |
+| end_date   | date   | Yes      |
+
+### Response Schema: SalesReportResponse
+
+| Field        | Type             |
+|--------------|------------------|
+| summary      | SalesSummary     |
+| top_products | List[TopProduct] |
+
+---
+
+**Note:** All field names, types, and endpoint details are as specified in SPEC.md. No authentication is required for any endpoint.
