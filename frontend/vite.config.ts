@@ -13,4 +13,14 @@ export default defineConfig({
       },
     },
   },
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    pool: 'threads',
+    setupFiles: ['./src/test-setup.ts'],
+    coverage: {
+      provider: 'c8',
+      reporter: ['text', 'html'],
+    },
+  },
 })

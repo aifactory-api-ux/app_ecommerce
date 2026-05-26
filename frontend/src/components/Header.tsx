@@ -20,6 +20,11 @@ export default function Header() {
             </Link>
             {isAuthenticated ? (
               <>
+                {user?.is_admin && (
+                  <Link to="/admin" className="text-indigo-600 font-medium hover:text-indigo-700">
+                    Admin
+                  </Link>
+                )}
                 <Link to="/orders" className="text-gray-600 hover:text-indigo-600">
                   Orders
                 </Link>

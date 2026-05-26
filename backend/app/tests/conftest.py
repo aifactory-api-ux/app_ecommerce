@@ -2,6 +2,7 @@ import pytest
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+import bcrypt as _bcrypt
 import fakeredis.aioredis
 
 from app.main import app
@@ -12,6 +13,13 @@ TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
 engine = create_async_engine(TEST_DATABASE_URL, echo=False)
 TestSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
+
+@pytest.fixture(autouse=True)
+def fast_bcrypt(monkeypatch):
+    """Reduce bcrypt a rounds=4 en tests (256x más rápido que default 12)."""
+    original = _bcrypt.gensalt
+    monkeypatch.setattr(_bcrypt, 'gensalt', lambda rounds=12, prefix=b'2b': original(4, prefix))
 
 
 @pytest_asyncio.fixture

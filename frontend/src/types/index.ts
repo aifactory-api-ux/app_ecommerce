@@ -4,6 +4,7 @@ export interface User {
   full_name: string | null
   is_active: boolean
   is_verified: boolean
+  is_admin?: boolean
   created_at: string
 }
 
@@ -51,4 +52,22 @@ export interface AuthTokens {
   access_token: string
   refresh_token: string
   token_type: string
+}
+
+export interface SalesSummary {
+  total_orders: number
+  total_revenue: number
+  total_products_sold: number
+}
+
+export interface TopProduct {
+  product_name: string
+  quantity_sold: number
+  revenue: number
+}
+
+export interface SalesDataPoint {
+  date: string
+  orders_count: number
+  revenue: number
 }

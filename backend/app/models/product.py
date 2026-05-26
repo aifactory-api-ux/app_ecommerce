@@ -2,9 +2,9 @@ import uuid
 from datetime import datetime
 from sqlalchemy import String, Text, DECIMAL, Boolean, Integer, DateTime, Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.dialects.postgresql import UUID
 import enum
 from app.database import Base
+from app.models.types import GUID
 
 
 class ProductType(str, enum.Enum):
@@ -18,7 +18,7 @@ class Product(Base):
     __tablename__ = "products"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+        GUID(), primary_key=True, default=uuid.uuid4
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     slug: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
