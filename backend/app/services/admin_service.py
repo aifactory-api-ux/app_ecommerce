@@ -117,7 +117,10 @@ class AdminService:
 
         result = await self.db.execute(
             select(Order)
-            .options(selectinload(Order.items).selectinload(OrderItem.product))
+            .options(
+                selectinload(Order.items).selectinload(OrderItem.product),
+                selectinload(Order.user),
+            )
             .where(
                 and_(
                     Order.created_at >= start_dt,
