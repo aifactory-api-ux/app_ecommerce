@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from app.config import get_settings
 from app.redis_client import close_redis
 from app.api import auth, users, products, cart, orders
+from app.api.admin import router as admin_router
 from app.api.seed import router as seed_router
 
 settings = get_settings()
@@ -35,6 +36,7 @@ app.include_router(users.router, prefix="/api/users", tags=["users"])
 app.include_router(products.router, prefix="/api/products", tags=["products"])
 app.include_router(cart.router, prefix="/api/cart", tags=["cart"])
 app.include_router(orders.router, prefix="/api/orders", tags=["orders"])
+app.include_router(admin_router, prefix="/api/admin", tags=["admin"])
 app.include_router(seed_router, prefix="/api", tags=["init"])
 
 
